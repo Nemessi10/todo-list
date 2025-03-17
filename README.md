@@ -61,3 +61,4 @@
 
 - The UI must be intuitive and user-friendly, following modern design principles.
 - The system must be accessible on screens as small (mobile) and as large (desktop).
+- The system must support both English and Ukrainian languages, with an option to switch between them.
