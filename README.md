@@ -41,6 +41,10 @@
 - The system must be available 99.9% of the time, excluding planned maintenance.
 - The backend must support graceful error handling and retry mechanisms.
 
+### Compatibility:
+- The system must support modern Chromium-based browsers (Google Chrome, Vivaldi, Brave, Opera).
+- The system must not provide support for Firefox-based browsers.
+
 ### Security:
 
 - User authentication must be implemented via JWT tokens or session.
