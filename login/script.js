@@ -5,15 +5,27 @@ const registerContainer = document.querySelector('.register-container');
 const loginPointer = document.querySelector('.login-pointer');
 const registerPointer = document.querySelector('.register-pointer');
 
-loginContainer.addEventListener('click', () => {
-    loginContainer.classList.toggle('active');
-    loginPointer.classList.toggle('active');
-});
+function setupToggle(container, pointer) {
+  container.addEventListener('click', (event) => {
+    const isActive = container.classList.contains('active');
 
-registerContainer.addEventListener('click', () => {
-    registerContainer.classList.toggle('active');
-    registerPointer.classList.toggle('active');
-});
+    if (isActive) {
+      // Розблюрений: повертаємо блюр тільки при кліку на сам контейнер
+      if (event.target === container) {
+        container.classList.remove('active');
+        pointer.classList.remove('active');
+      }
+    } else {
+      // Заблюрений: знімаємо блюр при кліку на будь-що в контейнері
+      container.classList.add('active');
+      pointer.classList.add('active');
+    }
+  });
+}
+
+setupToggle(loginContainer, loginPointer);
+setupToggle(registerContainer, registerPointer);
+
 /**********************************************************************/
 // Функція для зміни теми
 const themeToggle = document.querySelector('#theme-icon');
