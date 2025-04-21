@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title data-i18n="page_title">Login and Registration</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body class="light-theme en">
+    <main>
+      <nav>
+        <img
+          src="icons/sun.svg"
+          class="sun"
+          alt="Theme icon"
+          id="theme-icon"
+          title="Toggle theme"
+        />
+        <img
+          src="icons/flag.svg"
+          alt="Language icon"
+          id="language-icon"
+          title="Toggle language"
+        />
+      </nav>
+
+      <div class="container">
+        <div class="login-container">
+          <h2 id="login-text" data-i18n="login_title">Login</h2>
+          <form>
+            <div class="form-group">
+              <input
+                type="text"
+                id="login-name"
+                name="login-name"
+                placeholder="Enter your name"
+                data-i18n-placeholder="login_name_placeholder"
+                required
+              />
+            </div>
+            <div class="form-group">
+              <input
+                type="password"
+                id="login-password"
+                name="login-password"
+                placeholder="Enter your password"
+                data-i18n-placeholder="login_password_placeholder"
+                required
+              />
+            </div>
+            <button type="submit" data-i18n="login_button">Login</button>
+            <a href="#" class="register-link" data-i18n="register_link">
+              First time here? Register->
+            </a>
+          </form>
+        </div>
+
+        <div class="divider">
+            <h2 class="login-pointer" data-i18n="login_pointer">
+                ←Login
+            </h2>
+            <h2 class="register-pointer" data-i18n="register_pointer">
+                Registration→
+            </h2>
+        </div>
+
+        <div class="register-container hidden">
+          <h2 id="register-text" data-i18n="register_title">Register</h2>
+          <form>
+            <div class="form-group">
+              <input
+                type="text"
+                id="register-name"
+                name="register-name"
+                placeholder="Enter your name"
+                data-i18n-placeholder="register_name_placeholder"
+                required
+              />
+            </div>
+            <div class="form-group">
+              <input
+                type="email"
+                id="register-email"
+                name="register-email"
+                placeholder="Enter your email"
+                data-i18n-placeholder="register_email_placeholder"
+                required
+              />
+            </div>
+            <div class="form-group">
+              <input
+                type="password"
+                id="register-password"
+                name="register-password"
+                placeholder="Enter your password"
+                data-i18n-placeholder="register_password_placeholder"
+                required
+              />
+            </div>
+            <div class="form-group">
+              <input
+                type="password"
+                id="register-password-confirm"
+                name="register-password-confirm"
+                placeholder="Repeat the password"
+                data-i18n-placeholder="register_password_confirm_placeholder"
+                required
+              />
+            </div>
+            <button type="submit" data-i18n="register_button">
+              Register
+            </button>
+            <a href="#" class="login-link" data-i18n="login_link">
+              Have you been here before? Login->
+            </a>
+          </form>
+        </div>
+      </div>
+    </main>
+    <script src="script.js"></script>
+  </body>
+</html>
