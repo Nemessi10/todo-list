@@ -27,7 +27,7 @@ nav img {
     height: 44px;
     width: 44px;
     transition: filter 1.2s ease-in-out;
-    /*border: 3px solid red; /*для візуального дебагінгу */
+    border: 3px solid red; /*для візуального дебагінгу */
 }
 
 .container {
@@ -46,21 +46,42 @@ nav img {
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    /*border: 3px solid red; /*для візуального дебагінгу */
+    border: 3px solid red; /*для візуального дебагінгу */
     filter: blur(8px);
     transition: filter 0.8s ease;
+    transition: transform 0.8s ease-in-out;
+    transform: scale(0.9);
+    cursor: pointer;
+    position: relative;
 }
 
-.login-container.active,
+.login-container.active {
+    filter: blur(0);
+    transform: scale(1.2);
+    transform: translateX(50%);
+}
+
 .register-container.active {
     filter: blur(0);
+    transform: scale(1.2);
+    transform: translateX(-50%);
 }
 
+.login-container.shifted-left,
+.register-container.shifted-left {
+  transform: translateX(-50%) scale(0.8);
+}
+
+.login-container.shifted-right,
+.register-container.shifted-right {
+  transform: translateX(50%) scale(0.8);
+}
 
 .login-pointer,
 .register-pointer {
     filter: blur(0);
     transition: filter 0.8s ease;
+    cursor: pointer;
 }
 
 .login-pointer.active,
@@ -69,11 +90,29 @@ nav img {
 }
 
 .divider {
-  width: 1.9%;
+  width: fit-content;
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
+  /*border: 3px solid red; /*для візуального дебагінгу */
+  transition: transform 0.4s ease-in-out;
+  z-index: 3;
+  padding: 0 10px;
+}
+
+.divider.shifted-left {
+  transform: translateX(-300%);
+}
+
+.divider.shifted-right {
+  transform: translateX(300%);
+}
+
+.login-pointer,
+.register-pointer {
+  text-align: center;
+  max-width: 100%;
 }
 
 form {
@@ -165,6 +204,7 @@ body.dark-theme {
 body.dark-theme input {
   background-color: #1C1C1C;
   border-color: #2196F3;
+  color: white;
 }
 
 body.dark-theme button {
@@ -197,6 +237,7 @@ body.dark-theme #theme-icon {
         height: auto;
         padding: 20px 10px;
         filter: blur(0); /* blur off на мобілках, щоб не створювати чогось невнятного */
+        transform: none !important;
       }
 
       .divider {

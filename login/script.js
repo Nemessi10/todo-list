@@ -4,27 +4,36 @@ const loginContainer = document.querySelector('.login-container');
 const registerContainer = document.querySelector('.register-container');
 const loginPointer = document.querySelector('.login-pointer');
 const registerPointer = document.querySelector('.register-pointer');
+const divider = document.querySelector('.divider');
 
-function setupToggle(container, pointer) {
-  container.addEventListener('click', (event) => {
-    const isActive = container.classList.contains('active');
+function activate(containerToActivate, pointerToActivate, otherContainer, otherPointer) {
+  containerToActivate.classList.add('active');
+  pointerToActivate.classList.add('active');
+  containerToActivate.classList.remove('shifted-left', 'shifted-right');
 
-    if (isActive) {
-      // Розблюрений: повертаємо блюр тільки при кліку на сам контейнер
-      if (event.target === container) {
-        container.classList.remove('active');
-        pointer.classList.remove('active');
-      }
-    } else {
-      // Заблюрений: знімаємо блюр при кліку на будь-що в контейнері
-      container.classList.add('active');
-      pointer.classList.add('active');
-    }
-  });
+  otherContainer.classList.remove('active');
+  otherPointer.classList.remove('active');
+
+  if (containerToActivate === loginContainer) {
+    registerContainer.classList.add('shifted-right');
+    loginContainer.classList.remove('shifted-left', 'shifted-right');
+    divider.classList.remove('shifted-left');
+    divider.classList.add('shifted-right');
+  } else {
+    loginContainer.classList.add('shifted-left');
+    registerContainer.classList.remove('shifted-left', 'shifted-right');
+    divider.classList.remove('shifted-right');
+    divider.classList.add('shifted-left');
+  }
 }
 
-setupToggle(loginContainer, loginPointer);
-setupToggle(registerContainer, registerPointer);
+loginPointer.addEventListener('click', () => {
+  activate(loginContainer, loginPointer, registerContainer, registerPointer);
+});
+
+registerPointer.addEventListener('click', () => {
+  activate(registerContainer, registerPointer, loginContainer, loginPointer);
+});
 
 /**********************************************************************/
 // Функція для зміни теми
