@@ -27,7 +27,7 @@ nav img {
     height: 44px;
     width: 44px;
     transition: filter 1.2s ease-in-out;
-    border: 3px solid red; /*для візуального дебагінгу */
+    /*border: 3px solid red; /*для візуального дебагінгу */
 }
 
 .container {
@@ -46,7 +46,7 @@ nav img {
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    border: 3px solid red; /*для візуального дебагінгу */
+    /*border: 3px solid red; /*для візуального дебагінгу */
     filter: blur(8px);
     transition: filter 0.8s ease;
     transition: transform 0.8s ease-in-out;
