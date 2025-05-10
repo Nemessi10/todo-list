@@ -1,0 +1,36 @@
+const translations = {
+  en: {
+    login_title: "Login",
+    login_name_placeholder: "Enter your name",
+    login_password_placeholder: "Enter your password",
+    register_title: "Register",
+    register_name_placeholder: "Enter your name",
+    register_email_placeholder: "Enter your email",
+    register_password_placeholder: "Enter your password",
+    register_password_confirm_placeholder: "Repeat the password",
+    login_button: "Login",
+    register_button: "Register",
+    login_link: "Have you been here before? Login->",
+    register_link: "First time here? Register->",
+    register_pointer: "Register→",
+    login_pointer: "←Login",
+  },
+  uk: {
+    login_title: "Увійти",
+    login_name_placeholder: "Введіть ім’я",
+    login_password_placeholder: "Введіть пароль",
+    register_title: "Реєстрація",
+    register_name_placeholder: "Введіть ім’я",
+    register_email_placeholder: "Введіть e-пошту",
+    register_password_placeholder: "Введіть пароль",
+    register_password_confirm_placeholder: "Повторіть пароль",
+    login_button: "Увійти",
+    register_button: "Зареєструватися",
+    login_link: "Вже маєте акаунт? Увійти->",
+    register_link: "Вперше тут? Зареєструватися->",
+    register_pointer: "Реєстрація→",
+    login_pointer: "←Логін",
+  },
+};
+
+export default translations;
