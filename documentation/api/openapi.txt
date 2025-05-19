@@ -1,0 +1,588 @@
+openapi: 3.0.0
+info:
+  title: Нотатник API
+  version: v1
+  description: API для керування нотатками користувачів, автентифікації та профілю.
+servers:
+  - url: /api/v1
+    description: Основний сервер API
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    Error:
+      type: object
+      properties:
+        message:
+          type: string
+          description: Опис помилки.
+
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Унікальний ідентифікатор користувача.
+          readOnly: true
+        name:
+          type: string
+          description: Ім'я користувача.
+        email:
+          type: string
+          format: email
+          description: Email користувача.
+          readOnly: true
+      required:
+        - name
+        - email
+
+    AuthToken:
+      type: object
+      properties:
+        accessToken:
+          type: string
+          description: JWT токен доступу.
+        refreshToken:
+          type: string
+          description: JWT токен оновлення (опціонально).
+      required:
+        - accessToken
+
+    Note:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Унікальний ідентифікатор нотатки.
+          readOnly: true
+        title:
+          type: string
+          description: Заголовок нотатки.
+        content:
+          type: string
+          description: Вміст нотатки.
+        createdAt:
+          type: string
+          format: date-time
+          description: Дата та час створення нотатки.
+          readOnly: true
+        updatedAt:
+          type: string
+          format: date-time
+          description: Дата та час останнього оновлення нотатки.
+          readOnly: true
+      required:
+        - title
+        - content
+
+    RegisterRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Ім'я користувача для реєстрації.
+        email:
+          type: string
+          format: email
+          description: Email користувача для реєстрації.
+        password:
+          type: string
+          format: password
+          description: Пароль користувача для реєстрації.
+      required:
+        - name
+        - email
+        - password
+
+    LoginRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          description: Email користувача для входу.
+        password:
+          type: string
+          format: password
+          description: Пароль користувача для входу.
+      required:
+        - email
+        - password
+
+    RefreshTokenRequest:
+      type: object
+      properties:
+        refreshToken:
+          type: string
+          description: Токен оновлення.
+      required:
+        - refreshToken
+
+    ForgotPasswordRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          description: Email користувача для скидання пароля.
+      required:
+        - email
+
+    ResetPasswordRequest:
+      type: object
+      properties:
+        resetToken:
+          type: string
+          description: Токен для скидання пароля.
+        newPassword:
+          type: string
+          format: password
+          description: Новий пароль користувача.
+      required:
+        - resetToken
+        - newPassword
+
+    UpdateUserRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Нове ім'я користувача (опціонально).
+
+    UpdatePasswordRequest:
+      type: object
+      properties:
+        currentPassword:
+          type: string
+          format: password
+          description: Поточний пароль користувача.
+        newPassword:
+          type: string
+          format: password
+          description: Новий пароль користувача.
+      required:
+        - currentPassword
+        - newPassword
+
+paths:
+  /auth/register:
+    post:
+      summary: Зареєструвати нового користувача.
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '201':
+          description: Користувача успішно зареєстровано.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          description: Некоректний запит.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Користувач з таким email вже існує.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /auth/login:
+    post:
+      summary: Увійти в систему.
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Успішний вхід. Повертає токени.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthToken'
+        '400':
+          description: Некоректний запит.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Неправильні облікові дані.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /auth/refresh-token:
+    post:
+      summary: Оновити токен доступу.
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshTokenRequest'
+      responses:
+        '200':
+          description: Токен успішно оновлено.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthToken'
+        '401':
+          description: Недійсний або прострочений токен оновлення.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /auth/forgot-password:
+    post:
+      summary: Запит на скидання пароля.
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ForgotPasswordRequest'
+      responses:
+        '200':
+          description: Інструкції для скидання пароля надіслано на email.
+        '400':
+          description: Некоректний запит (наприклад, невалідний email).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /auth/reset-password:
+    post:
+      summary: Встановити новий пароль.
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResetPasswordRequest'
+      responses:
+        '200':
+          description: Пароль успішно змінено.
+        '400':
+          description: Некоректний запит.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Недійсний токен скидання.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /notes:
+    get:
+      summary: Отримати список нотаток.
+      security:
+        - bearerAuth: []
+      tags:
+        - Notes
+      parameters:
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            minimum: 1
+            default: 10
+          description: Кількість нотаток на сторінці.
+        - in: query
+          name: offset
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+          description: Зміщення від початку списку.
+        - in: query
+          name: sort
+          schema:
+            type: string
+          description: Поле для сортування (наприклад, createdAt, -updatedAt).
+      responses:
+        '200':
+          description: Успішний запит. Повертає масив нотаток.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Note'
+        '401':
+          description: Неавторизований доступ.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Помилка на сервері.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    post:
+      summary: Створити нову нотатку.
+      security:
+        - bearerAuth: []
+      tags:
+        - Notes
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Note'
+      responses:
+        '201':
+          description: Нотатку успішно створено. Повертає створену нотатку.
+          headers:
+            Location:
+              schema:
+                type: string
+              description: URL новоствореного ресурсу.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Note'
+        '400':
+          description: Некоректний запит.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Неавторизований доступ.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Помилка на сервері.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /notes/{id}:
+    get:
+      summary: Отримати нотатку за ID.
+      security:
+        - bearerAuth: []
+      tags:
+        - Notes
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Ідентифікатор нотатки.
+      responses:
+        '200':
+          description: Успішний запит. Повертає нотатку.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Note'
+        '401':
+          description: Неавторизований доступ.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Нотатку не знайдено.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Помилка на сервері.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    put:
+      summary: Оновити нотатку за ID.
+      security:
+        - bearerAuth: []
+      tags:
+        - Notes
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Ідентифікатор нотатки.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Note' # Можна створити окрему схему для оновлення, якщо не всі поля обов'язкові
+      responses:
+        '200':
+          description: Нотатку успішно оновлено. Повертає оновлену нотатку.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Note'
+        '400':
+          description: Некоректний запит.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Неавторизований доступ.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Нотатку не знайдено.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Помилка на сервері.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      summary: Видалити нотатку за ID.
+      security:
+        - bearerAuth: []
+      tags:
+        - Notes
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Ідентифікатор нотатки.
+      responses:
+        '204':
+          description: Нотатку успішно видалено.
+        '401':
+          description: Неавторизований доступ.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Нотатку не знайдено.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Помилка на сервері.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /users/me:
+    get:
+      summary: Отримати інформацію профілю поточного користувача.
+      security:
+        - bearerAuth: []
+      tags:
+        - Profile
+      responses:
+        '200':
+          description: Успішний запит. Повертає інформацію профілю.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '401':
+          description: Неавторизований доступ.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Помилка на сервері.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    put:
+      summary: Оновити інформацію профілю поточного користувача.
+      security:
+        - bearerAuth: []
+      tags:
+        - Profile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateUserRequest'
+      responses:
+        '200':
+          description: Інформацію профілю успішно оновлено. Повертає оновлену інформацію.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          description: Некоректний запит.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Неавторизований доступ.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Помилка на сервері.
+          content:
+            application/json:
+              schema:
