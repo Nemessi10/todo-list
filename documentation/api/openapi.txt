@@ -2,7 +2,7 @@ openapi: 3.0.0
 info:
   title: Нотатник API
   version: v1
-  description: API для керування нотатками користувачів, автентифікації та профілю.
+  description: API для керування нотатками, групами, учасниками, автентифікацією та профілем користувача.
 servers:
   - url: /api/v1
     description: Основний сервер API
@@ -13,90 +13,43 @@ components:
       type: http
       scheme: bearer
       bearerFormat: JWT
+
   schemas:
     Error:
       type: object
       properties:
         message:
           type: string
-          description: Опис помилки.
 
     User:
       type: object
       properties:
-        id:
-          type: string
-          format: uuid
-          description: Унікальний ідентифікатор користувача.
+        user_id:
+          type: integer
           readOnly: true
-        name:
+        username:
           type: string
-          description: Ім'я користувача.
         email:
           type: string
           format: email
-          description: Email користувача.
-          readOnly: true
       required:
-        - name
+        - user_id
+        - username
         - email
-
-    AuthToken:
-      type: object
-      properties:
-        accessToken:
-          type: string
-          description: JWT токен доступу.
-        refreshToken:
-          type: string
-          description: JWT токен оновлення (опціонально).
-      required:
-        - accessToken
-
-    Note:
-      type: object
-      properties:
-        id:
-          type: string
-          format: uuid
-          description: Унікальний ідентифікатор нотатки.
-          readOnly: true
-        title:
-          type: string
-          description: Заголовок нотатки.
-        content:
-          type: string
-          description: Вміст нотатки.
-        createdAt:
-          type: string
-          format: date-time
-          description: Дата та час створення нотатки.
-          readOnly: true
-        updatedAt:
-          type: string
-          format: date-time
-          description: Дата та час останнього оновлення нотатки.
-          readOnly: true
-      required:
-        - title
-        - content
 
     RegisterRequest:
       type: object
       properties:
-        name:
+        username:
           type: string
-          description: Ім'я користувача для реєстрації.
         email:
           type: string
           format: email
-          description: Email користувача для реєстрації.
         password:
           type: string
           format: password
-          description: Пароль користувача для реєстрації.
       required:
-        - name
+        - username
         - email
         - password
 
@@ -106,21 +59,26 @@ components:
         email:
           type: string
           format: email
-          description: Email користувача для входу.
         password:
           type: string
           format: password
-          description: Пароль користувача для входу.
       required:
         - email
         - password
+
+    AuthToken:
+      type: object
+      properties:
+        accessToken:
+          type: string
+        refreshToken:
+          type: string
 
     RefreshTokenRequest:
       type: object
       properties:
         refreshToken:
           type: string
-          description: Токен оновлення.
       required:
         - refreshToken
 
@@ -130,7 +88,6 @@ components:
         email:
           type: string
           format: email
-          description: Email користувача для скидання пароля.
       required:
         - email
 
@@ -139,11 +96,9 @@ components:
       properties:
         resetToken:
           type: string
-          description: Токен для скидання пароля.
         newPassword:
           type: string
           format: password
-          description: Новий пароль користувача.
       required:
         - resetToken
         - newPassword
@@ -151,9 +106,11 @@ components:
     UpdateUserRequest:
       type: object
       properties:
-        name:
+        username:
           type: string
-          description: Нове ім'я користувача (опціонально).
+        email:
+          type: string
+          format: email
 
     UpdatePasswordRequest:
       type: object
@@ -161,21 +118,127 @@ components:
         currentPassword:
           type: string
           format: password
-          description: Поточний пароль користувача.
         newPassword:
           type: string
           format: password
-          description: Новий пароль користувача.
       required:
         - currentPassword
         - newPassword
 
+    Note:
+      type: object
+      properties:
+        note_id:
+          type: integer
+          readOnly: true
+        group_id:
+          type: integer
+        title:
+          type: string
+        content:
+          type: string
+        deadline:
+          type: string
+          format: date
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+      required:
+        - note_id
+        - group_id
+        - title
+        - content
+
+    CreateNoteRequest:
+      type: object
+      properties:
+        group_id:
+          type: integer
+        title:
+          type: string
+        content:
+          type: string
+        deadline:
+          type: string
+          format: date
+      required:
+        - group_id
+        - title
+        - content
+
+    UpdateNoteRequest:
+      type: object
+      properties:
+        title:
+          type: string
+        content:
+          type: string
+        deadline:
+          type: string
+          format: date
+
+    Group:
+      type: object
+      properties:
+        group_id:
+          type: integer
+          readOnly: true
+        group_name:
+          type: string
+        group_description:
+          type: string
+        creator:
+          type: integer
+      required:
+        - group_id
+        - group_name
+        - creator
+
+    CreateGroupRequest:
+      type: object
+      properties:
+        group_name:
+          type: string
+        group_description:
+          type: string
+      required:
+        - group_name
+
+    UpdateGroupRequest:
+      type: object
+      properties:
+        group_name:
+          type: string
+        group_description:
+          type: string
+
+    GroupMember:
+      type: object
+      properties:
+        user_id:
+          type: integer
+        group_id:
+          type: integer
+      required:
+        - user_id
+        - group_id
+
+    AddGroupMemberRequest:
+      type: object
+      properties:
+        user_id:
+          type: integer
+      required:
+        - user_id
+
 paths:
   /auth/register:
     post:
-      summary: Зареєструвати нового користувача.
-      tags:
-        - Authentication
+      summary: Реєстрація нового користувача
+      tags: [Authentication]
       requestBody:
         required: true
         content:
@@ -184,19 +247,19 @@ paths:
               $ref: '#/components/schemas/RegisterRequest'
       responses:
         '201':
-          description: Користувача успішно зареєстровано.
+          description: Користувача створено
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/User'
         '400':
-          description: Некоректний запит.
+          description: Некоректний запит
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
         '409':
-          description: Користувач з таким email вже існує.
+          description: Email вже зайнятий
           content:
             application/json:
               schema:
@@ -204,9 +267,8 @@ paths:
 
   /auth/login:
     post:
-      summary: Увійти в систему.
-      tags:
-        - Authentication
+      summary: Вхід користувача
+      tags: [Authentication]
       requestBody:
         required: true
         content:
@@ -215,19 +277,19 @@ paths:
               $ref: '#/components/schemas/LoginRequest'
       responses:
         '200':
-          description: Успішний вхід. Повертає токени.
+          description: Успішний вхід
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/AuthToken'
         '400':
-          description: Некоректний запит.
+          description: Некоректний запит
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
         '401':
-          description: Неправильні облікові дані.
+          description: Неправильні облікові дані
           content:
             application/json:
               schema:
@@ -235,9 +297,8 @@ paths:
 
   /auth/refresh-token:
     post:
-      summary: Оновити токен доступу.
-      tags:
-        - Authentication
+      summary: Оновлення токена доступу
+      tags: [Authentication]
       requestBody:
         required: true
         content:
@@ -246,13 +307,13 @@ paths:
               $ref: '#/components/schemas/RefreshTokenRequest'
       responses:
         '200':
-          description: Токен успішно оновлено.
+          description: Новий токен
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/AuthToken'
         '401':
-          description: Недійсний або прострочений токен оновлення.
+          description: Недійсний токен оновлення
           content:
             application/json:
               schema:
@@ -260,9 +321,8 @@ paths:
 
   /auth/forgot-password:
     post:
-      summary: Запит на скидання пароля.
-      tags:
-        - Authentication
+      summary: Запит на скидання пароля
+      tags: [Authentication]
       requestBody:
         required: true
         content:
@@ -271,9 +331,9 @@ paths:
               $ref: '#/components/schemas/ForgotPasswordRequest'
       responses:
         '200':
-          description: Інструкції для скидання пароля надіслано на email.
+          description: Інструкції надіслано
         '400':
-          description: Некоректний запит (наприклад, невалідний email).
+          description: Некоректний email
           content:
             application/json:
               schema:
@@ -281,9 +341,8 @@ paths:
 
   /auth/reset-password:
     post:
-      summary: Встановити новий пароль.
-      tags:
-        - Authentication
+      summary: Встановлення нового пароля
+      tags: [Authentication]
       requestBody:
         required: true
         content:
@@ -292,15 +351,31 @@ paths:
               $ref: '#/components/schemas/ResetPasswordRequest'
       responses:
         '200':
-          description: Пароль успішно змінено.
+          description: Пароль змінено
         '400':
-          description: Некоректний запит.
+          description: Некоректний запит
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
         '401':
-          description: Недійсний токен скидання.
+          description: Недійсний токен скидання
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /auth/logout:
+    post:
+      summary: Вихід користувача
+      tags: [Authentication]
+      security:
+        - bearerAuth: []
+      responses:
+        '204':
+          description: Вихід виконано
+        '401':
+          description: Недійсний токен
           content:
             application/json:
               schema:
@@ -308,34 +383,26 @@ paths:
 
   /notes:
     get:
-      summary: Отримати список нотаток.
+      summary: Список нотаток користувача (по групах, де він учасник)
+      tags: [Notes]
       security:
         - bearerAuth: []
-      tags:
-        - Notes
       parameters:
         - in: query
           name: limit
           schema:
             type: integer
-            minimum: 1
-            default: 10
-          description: Кількість нотаток на сторінці.
         - in: query
           name: offset
           schema:
             type: integer
-            minimum: 0
-            default: 0
-          description: Зміщення від початку списку.
         - in: query
           name: sort
           schema:
             type: string
-          description: Поле для сортування (наприклад, createdAt, -updatedAt).
       responses:
         '200':
-          description: Успішний запит. Повертає масив нотаток.
+          description: Масив нотаток
           content:
             application/json:
               schema:
@@ -343,55 +410,37 @@ paths:
                 items:
                   $ref: '#/components/schemas/Note'
         '401':
-          description: Неавторизований доступ.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '500':
-          description: Помилка на сервері.
+          description: Неавторизований доступ
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
     post:
-      summary: Створити нову нотатку.
+      summary: Створити нову нотатку
+      tags: [Notes]
       security:
         - bearerAuth: []
-      tags:
-        - Notes
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Note'
+              $ref: '#/components/schemas/CreateNoteRequest'
       responses:
         '201':
-          description: Нотатку успішно створено. Повертає створену нотатку.
-          headers:
-            Location:
-              schema:
-                type: string
-              description: URL новоствореного ресурсу.
+          description: Створено нотатку
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Note'
         '400':
-          description: Некоректний запит.
+          description: Некоректний запит
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
         '401':
-          description: Неавторизований доступ.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '500':
-          description: Помилка на сервері.
+          description: Неавторизований доступ
           content:
             application/json:
               schema:
@@ -399,126 +448,442 @@ paths:
 
   /notes/{id}:
     get:
-      summary: Отримати нотатку за ID.
+      summary: Отримати нотатку за ID
+      tags: [Notes]
       security:
         - bearerAuth: []
-      tags:
-        - Notes
       parameters:
         - in: path
           name: id
           required: true
           schema:
-            type: string
-            format: uuid
-          description: Ідентифікатор нотатки.
+            type: integer
       responses:
         '200':
-          description: Успішний запит. Повертає нотатку.
+          description: Нотатка
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Note'
         '401':
-          description: Неавторизований доступ.
+          description: Неавторизований доступ
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
         '404':
-          description: Нотатку не знайдено.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '500':
-          description: Помилка на сервері.
+          description: Нотатку не знайдено
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
     put:
-      summary: Оновити нотатку за ID.
+      summary: Оновити нотатку за ID
+      tags: [Notes]
       security:
         - bearerAuth: []
-      tags:
-        - Notes
       parameters:
         - in: path
           name: id
           required: true
           schema:
-            type: string
-            format: uuid
-          description: Ідентифікатор нотатки.
+            type: integer
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Note' # Можна створити окрему схему для оновлення, якщо не всі поля обов'язкові
+              $ref: '#/components/schemas/UpdateNoteRequest'
       responses:
         '200':
-          description: Нотатку успішно оновлено. Повертає оновлену нотатку.
+          description: Оновлено нотатку
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Note'
         '400':
-          description: Некоректний запит.
+          description: Некоректний запит
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
         '401':
-          description: Неавторизований доступ.
+          description: Неавторизований доступ
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
         '404':
-          description: Нотатку не знайдено.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '500':
-          description: Помилка на сервері.
+          description: Нотатку не знайдено
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
     delete:
-      summary: Видалити нотатку за ID.
+      summary: Видалити нотатку за ID
+      tags: [Notes]
       security:
         - bearerAuth: []
-      tags:
-        - Notes
       parameters:
         - in: path
           name: id
           required: true
           schema:
-            type: string
-            format: uuid
-          description: Ідентифікатор нотатки.
+            type: integer
       responses:
         '204':
-          description: Нотатку успішно видалено.
+          description: Нотатку видалено
         '401':
-          description: Неавторизований доступ.
+          description: Неавторизований доступ
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
         '404':
-          description: Нотатку не знайдено.
+          description: Нотатку не знайдено
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-        '500':
-          description: Помилка на сервері.
+
+  /groups:
+    get:
+      summary: Список груп користувача (де він учасник або творець)
+      tags: [Groups]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Масив груп
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Group'
+        '401':
+          description: Неавторизований доступ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    post:
+      summary: Створити групу
+      tags: [Groups]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateGroupRequest'
+      responses:
+        '201':
+          description: Групу створено
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Group'
+        '400':
+          description: Некоректний запит
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Неавторизований доступ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /groups/{id}:
+    get:
+      summary: Детальна інформація про групу
+      tags: [Groups]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Група
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Group'
+        '401':
+          description: Неавторизований доступ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Немає доступу
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Групу не знайдено
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    put:
+      summary: Оновити групу (тільки творець)
+      tags: [Groups]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateGroupRequest'
+      responses:
+        '200':
+          description: Групу оновлено
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Group'
+        '400':
+          description: Некоректний запит
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Неавторизований доступ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Немає прав
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Групу не знайдено
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      summary: Видалити групу (тільки творець)
+      tags: [Groups]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Групу видалено
+        '401':
+          description: Неавторизований доступ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Немає прав
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Групу не знайдено
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /groups/{id}/members:
+    get:
+      summary: Список учасників групи
+      tags: [GroupMembers]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Масив учасників
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/User'
+        '401':
+          description: Неавторизований доступ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Немає доступу до групи
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Групу не знайдено
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    post:
+      summary: Додати учасника до групи (тільки творець)
+      tags: [GroupMembers]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddGroupMemberRequest'
+      responses:
+        '201':
+          description: Додано учасника
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GroupMember'
+        '400':
+          description: Некоректний запит
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Неавторизований доступ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Немає прав
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Групу не знайдено
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Користувач вже є учасником
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /groups/{id}/members/{user_id}:
+    delete:
+      summary: Видалити учасника з групи (тільки творець або сам користувач)
+      tags: [GroupMembers]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+        - in: path
+          name: user_id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Учасника видалено
+        '401':
+          description: Неавторизований доступ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Немає прав
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Не знайдено
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /groups/{id}/notes:
+    get:
+      summary: Список нотаток групи
+      tags: [Groups]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Масив нотаток
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Note'
+        '401':
+          description: Неавторизований доступ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Немає доступу до групи
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Групу не знайдено
           content:
             application/json:
               schema:
@@ -526,36 +891,28 @@ paths:
 
   /users/me:
     get:
-      summary: Отримати інформацію профілю поточного користувача.
+      summary: Отримати інформацію профілю
+      tags: [Profile]
       security:
         - bearerAuth: []
-      tags:
-        - Profile
       responses:
         '200':
-          description: Успішний запит. Повертає інформацію профілю.
+          description: Профіль користувача
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/User'
         '401':
-          description: Неавторизований доступ.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '500':
-          description: Помилка на сервері.
+          description: Неавторизований доступ
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
     put:
-      summary: Оновити інформацію профілю поточного користувача.
+      summary: Оновити профіль користувача
+      tags: [Profile]
       security:
         - bearerAuth: []
-      tags:
-        - Profile
       requestBody:
         required: true
         content:
@@ -564,25 +921,62 @@ paths:
               $ref: '#/components/schemas/UpdateUserRequest'
       responses:
         '200':
-          description: Інформацію профілю успішно оновлено. Повертає оновлену інформацію.
+          description: Оновлений профіль
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/User'
         '400':
-          description: Некоректний запит.
+          description: Некоректний запит
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
         '401':
-          description: Неавторизований доступ.
+          description: Неавторизований доступ
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-        '500':
-          description: Помилка на сервері.
+    delete:
+      summary: Видалити обліковий запис
+      tags: [Profile]
+      security:
+        - bearerAuth: []
+      responses:
+        '204':
+          description: Обліковий запис видалено
+        '401':
+          description: Неавторизований доступ
           content:
             application/json:
               schema:
+                $ref: '#/components/schemas/Error'
+
+  /users/me/password:
+    put:
+      summary: Змінити пароль користувача
+      tags: [Profile]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdatePasswordRequest'
+      responses:
+        '204':
+          description: Пароль змінено
+        '400':
+          description: Некоректний запит
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Неавторизований доступ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
