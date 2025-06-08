@@ -1,0 +1,467 @@
+openapi: 3.0.0
+info:
+  title: Користувачі API (Нотатник)
+  version: v1
+  description: Мікросервіс для керування користувачами, автентифікації та профілю, на основі таблиці 'users'.
+servers:
+  - url: /api/v1
+    description: Основний сервер API Користувачів
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    Error:
+      type: object
+      properties:
+        message:
+          type: string
+          description: Детальний опис помилки.
+
+    User:
+      type: object
+      properties:
+        user_id:
+          type: integer
+          format: int64 # або int32, залежить від того розміру, який нам потрібен у БД
+          description: Унікальний ідентифікатор користувача.
+          readOnly: true
+        username:
+          type: string
+          description: Унікальне ім'я користувача.
+        email:
+          type: string
+          format: email
+          description: Унікальний email користувача.
+      required:
+        - user_id
+        - username
+        - email
+
+    AuthToken:
+      type: object
+      properties:
+        accessToken:
+          type: string
+          description: JWT токен доступу.
+        refreshToken:
+          type: string
+          description: JWT токен оновлення.
+      required:
+        - accessToken
+        - refreshToken
+
+    AuthTokenWithUser:
+      allOf:
+        - $ref: '#/components/schemas/AuthToken'
+        - type: object
+          properties:
+            user:
+              $ref: '#/components/schemas/User'
+          required:
+            - user
+
+    RegisterRequest:
+      type: object
+      properties:
+        username:
+          type: string
+          description: Ім'я користувача для реєстрації.
+        email:
+          type: string
+          format: email
+          description: Email користувача для реєстрації.
+        password:
+          type: string
+          format: password
+          description: Пароль користувача (буде хешований на сервері).
+      required:
+        - username
+        - email
+        - password
+
+    LoginRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          description: Email користувача для входу.
+        password:
+          type: string
+          format: password
+          description: Пароль користувача.
+      required:
+        - email
+        - password
+
+    RefreshTokenRequest:
+      type: object
+      properties:
+        refreshToken:
+          type: string
+          description: Токен оновлення.
+      required:
+        - refreshToken
+
+    ForgotPasswordRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          description: Email користувача для скидання пароля.
+      required:
+        - email
+
+    ResetPasswordRequest:
+      type: object
+      properties:
+        resetToken:
+          type: string
+          description: Токен для скидання пароля, отриманий з email.
+        newPassword:
+          type: string
+          format: password
+          description: Новий пароль користувача.
+      required:
+        - resetToken
+        - newPassword
+
+    UpdateUserRequest:
+      type: object
+      properties:
+        username:
+          type: string
+          description: Нове ім'я користувача (опціонально).
+        email:
+          type: string
+          format: email
+          description: Новий email користувача (опціонально).
+      # Хоча поля є опціональними, одне з них має бути присутнім для оновлення. Інакше ми ніц не оновим
+      # Це варто буде уточнити у валідації на бекенді.
+
+    UpdatePasswordRequest:
+      type: object
+      properties:
+        currentPassword:
+          type: string
+          format: password
+          description: Поточний пароль користувача.
+        newPassword:
+          type: string
+          format: password
+          description: Новий пароль користувача.
+      required:
+        - currentPassword
+        - newPassword
+
+paths:
+  /users/register:
+    post:
+      summary: Зареєструвати нового користувача.
+      tags:
+        - Користувачі
+        - Автентифікація
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '201':
+          description: Користувача успішно зареєстровано. Повертає інформацію про користувача та токени.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthTokenWithUser'
+        '400':
+          description: Некоректний запит.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Користувач з таким username або email вже існує.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Помилка на сервері.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /users/login:
+    post:
+      summary: Увійти в систему.
+      tags:
+        - Користувачі
+        - Автентифікація
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Успішний вхід. Повертає токени та інформацію про користувача.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthTokenWithUser'
+        '400':
+          description: Некоректний запит.
+          content:
+            application:json
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Неправильні облікові дані.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Помилка на сервері.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /users/refresh-token:
+    post:
+      summary: Оновити токен доступу.
+      tags:
+        - Користувачі
+        - Автентифікація
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshTokenRequest'
+      responses:
+        '200':
+          description: Токен успішно оновлено.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthToken'
+        '401':
+          description: Недійсний або прострочений токен оновлення.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Помилка на сервері.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /users/forgot-password:
+    post:
+      summary: Запит на скидання пароля.
+      tags:
+        - Користувачі
+        - Автентифікація
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ForgotPasswordRequest'
+      responses:
+        '200':
+          description: Інструкції для скидання пароля надіслано на email.
+        '400':
+          description: Некоректний запит (наприклад, невалідний email).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Помилка на сервері.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /users/reset-password:
+    post:
+      summary: Встановити новий пароль.
+      tags:
+        - Користувачі
+        - Автентифікація
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResetPasswordRequest'
+      responses:
+        '200':
+          description: Пароль успішно змінено.
+        '400':
+          description: Некоректний запит.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Недійсний токен скидання.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Помилка на сервері.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /users/me:
+    get:
+      summary: Отримати інформацію профілю поточного користувача.
+      security:
+        - bearerAuth: []
+      tags:
+        - Користувачі
+        - Профіль
+      responses:
+        '200':
+          description: Успішний запит. Повертає інформацію профілю.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '401':
+          description: Неавторизований доступ.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Користувача не знайдено (хоча для 'me' це малоймовірно, якщо токен дійсний).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Помилка на сервері.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    put:
+      summary: Оновити інформацію профілю поточного користувача.
+      security:
+        - bearerAuth: []
+      tags:
+        - Користувачі
+        - Профіль
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateUserRequest'
+      responses:
+        '200':
+          description: Інформацію профілю успішно оновлено. Повертає оновлену інформацію.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          description: Некоректний запит.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Неавторизований доступ.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Новий username або email вже зайнятий іншим користувачем.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Помилка на сервері.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      summary: Видалити обліковий запис поточного користувача.
+      security:
+        - bearerAuth: []
+      tags:
+        - Користувачі
+        - Профіль
+      responses:
+        '204':
+          description: Обліковий запис успішно видалено.
+        '401':
+          description: Неавторизований доступ.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Помилка на сервері.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /users/me/password:
+    put:
+      summary: Змінити пароль поточного користувача.
+      security:
+        - bearerAuth: []
+      tags:
+        - Користувачі
+        - Профіль
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdatePasswordRequest'
+      responses:
+        '204':
+          description: Пароль успішно змінено.
+        '400':
+          description: Некоректний запит (наприклад, новий пароль не відповідає вимогам або неправильний поточний пароль).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Неавторизований доступ або неправильний поточний пароль.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Помилка на сервері.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
