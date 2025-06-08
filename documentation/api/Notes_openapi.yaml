@@ -1,0 +1,383 @@
+openapi: 3.0.0
+info:
+  title: Нотатки API (Нотатник)
+  version: v1
+  description: Мікросервіс для керування нотатками у групах.
+servers:
+  - url: /api/v1
+    description: Основний сервер API Нотаток
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    Error:
+      type: object
+      properties:
+        message:
+          type: string
+          description: Детальний опис помилки.
+
+    Note:
+      type: object
+      properties:
+        note_id:
+          type: integer
+          format: int64
+          description: Унікальний ідентифікатор нотатки.
+          readOnly: true
+        group_id:
+          type: integer
+          format: int64
+          description: Ідентифікатор групи, до якої належить нотатка.
+          readOnly: true
+        title:
+          type: string
+          description: Заголовок нотатки.
+        content:
+          type: string
+          description: Вміст нотатки.
+        deadline:
+          type: string
+          format: date
+          description: Дедлайн нотатки.
+          nullable: true # Може бути відсутнімБ може бути присутнім...
+        created_at:
+          type: string
+          format: date-time
+          description: Дата та час створення нотатки.
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          description: Дата та час останнього оновлення нотатки.
+          readOnly: true
+      required:
+        - note_id
+        - group_id
+        - title
+        - content
+        - created_at
+        - updated_at
+
+    CreateNoteRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          description: Заголовок нотатки.
+        content:
+          type: string
+          description: Вміст нотатки.
+        deadline:
+          type: string
+          format: date
+          description: Дедлайн нотатки.
+          nullable: true
+      required:
+        - title
+        - content
+
+    UpdateNoteRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          description: Новий заголовок нотатки.
+        content:
+          type: string
+          description: Новий вміст нотатки.
+        deadline:
+          type: string
+          format: date
+          description: Новий дедлайн нотатки.
+          nullable: true
+      # Хоча поля є опціональними, одне з них має бути присутнім для оновлення. Логічно ж
+
+paths:
+  /groups/{group_id}/notes:
+    get:
+      summary: Отримати список нотаток у групі.
+      security:
+        - bearerAuth: []
+      tags:
+        - Нотатки
+      parameters:
+        - in: path
+          name: group_id
+          required: true
+          schema:
+            type: integer
+            format: int64
+          description: Ідентифікатор групи, нотатки якої потрібно отримати.
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            minimum: 1
+            default: 10
+          description: Кількість нотаток на сторінці.
+        - in: query
+          name: offset
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+          description: Зміщення від початку списку.
+        - in: query
+          name: sort_by
+          schema:
+            type: string
+            enum: [created_at, deadline, title]
+            default: created_at
+          description: Поле для сортування нотаток.
+        - in: query
+          name: order
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: desc
+          description: Порядок сортування (за зростанням/спаданням).
+      responses:
+        '200':
+          description: Успішний запит. Повертає масив нотаток.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Note'
+        '401':
+          description: Неавторизований доступ.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Заборонено. Користувач не є членом вказаної групи.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Групу не знайдено.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Помилка на сервері.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    post:
+      summary: Створити нову нотатку в групі.
+      security:
+        - bearerAuth: []
+      tags:
+        - Нотатки
+      parameters:
+        - in: path
+          name: group_id
+          required: true
+          schema:
+            type: integer
+            format: int64
+          description: Ідентифікатор групи, в якій потрібно створити нотатку.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateNoteRequest'
+      responses:
+        '201':
+          description: Нотатку успішно створено. Повертає створену нотатку.
+          headers:
+            Location:
+              schema:
+                type: string
+              description: URL новоствореного ресурсу.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Note'
+        '400':
+          description: Некоректний запит.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Неавторизований доступ.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Заборонено. Користувач не є членом вказаної групи.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Групу не знайдено.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Помилка на сервері.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /notes/{note_id}:
+    get:
+      summary: Отримати конкретну нотатку за ID.
+      security:
+        - bearerAuth: []
+      tags:
+        - Нотатки
+      parameters:
+        - in: path
+          name: note_id
+          required: true
+          schema:
+            type: integer
+            format: int64
+          description: Ідентифікатор нотатки.
+      responses:
+        '200':
+          description: Успішний запит. Повертає нотатку.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Note'
+        '401':
+          description: Неавторизований доступ.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Заборонено. Користувач не є членом групи, до якої належить нотатка.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Нотатку не знайдено.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Помилка на сервері.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    put:
+      summary: Оновити нотатку за ID.
+      security:
+        - bearerAuth: []
+      tags:
+        - Нотатки
+      parameters:
+        - in: path
+          name: note_id
+          required: true
+          schema:
+            type: integer
+            format: int64
+          description: Ідентифікатор нотатки.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateNoteRequest'
+      responses:
+        '200':
+          description: Нотатку успішно оновлено. Повертає оновлену нотатку.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Note'
+        '400':
+          description: Некоректний запит.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Неавторизований доступ.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Заборонено. Користувач не є членом групи, до якої належить нотатка.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Нотатку не знайдено.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Помилка на сервері.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      summary: Видалити нотатку за ID.
+      security:
+        - bearerAuth: []
+      tags:
+        - Нотатки
+      parameters:
+        - in: path
+          name: note_id
+          required: true
+          schema:
+            type: integer
+            format: int64
+          description: Ідентифікатор нотатки.
+      responses:
+        '204':
+          description: Нотатку успішно видалено.
+        '401':
+          description: Неавторизований доступ.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Заборонено. Користувач не є членом групи, до якої належить нотатка.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Нотатку не знайдено.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Помилка на сервері.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
