@@ -1,0 +1,513 @@
+openapi: 3.0.0
+info:
+  title: Групи та Членство API (Нотатник)
+  version: v1
+  description: Мікросервіс для керування групами та членством користувачів у групах.
+servers:
+  - url: /api/v1
+    description: Основний сервер API Груп та Членства
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    Error:
+      type: object
+      properties:
+        message:
+          type: string
+          description: Детальний опис помилки.
+
+    UserInGroup: # Схема для представлення члена групи (базові дані з users)
+      type: object
+      properties:
+        user_id:
+          type: integer
+          format: int64
+          description: Унікальний ідентифікатор користувача.
+          readOnly: true
+        username:
+          type: string
+          description: Ім'я користувача.
+          readOnly: true
+      required:
+        - user_id
+        - username
+
+    Group:
+      type: object
+      properties:
+        group_id:
+          type: integer
+          format: int64
+          description: Унікальний ідентифікатор групи.
+          readOnly: true
+        creator:
+          type: integer
+          format: int64
+          description: Ідентифікатор користувача, який створив групу.
+          readOnly: true
+        group_name:
+          type: string
+          description: Назва групи.
+        group_description:
+          type: string
+          description: Опис групи.
+          nullable: true
+      required:
+        - group_id
+        - creator
+        - group_name
+
+    CreateGroupRequest:
+      type: object
+      properties:
+        group_name:
+          type: string
+          description: Назва групи.
+        group_description:
+          type: string
+          description: Опис групи.
+          nullable: true
+      required:
+        - group_name
+
+    UpdateGroupRequest:
+      type: object
+      properties:
+        group_name:
+          type: string
+          description: Нова назва групи.
+        group_description:
+          type: string
+          description: Новий опис групи.
+          nullable: true
+      # Хоча поля є опціональними, одне з них має бути присутнім для оновлення. Логічно ж...
+
+    AddMemberRequest:
+      type: object
+      properties:
+        user_id:
+          type: integer
+          format: int64
+          description: Ідентифікатор користувача, якого потрібно додати до групи.
+      required:
+        - user_id
+
+    MembershipStatus:
+      type: object
+      properties:
+        group_id:
+          type: integer
+          format: int64
+        user_id:
+          type: integer
+          format: int64
+        message:
+          type: string
+          description: Повідомлення про статус операції.
+      required:
+        - group_id
+        - user_id
+
+
+paths:
+  /groups:
+    get:
+      summary: Отримати список груп.
+      security:
+        - bearerAuth: []
+      tags:
+        - Групи
+      parameters:
+        - in: query
+          name: isMember
+          schema:
+            type: boolean
+          description: Фільтрувати групи, де поточний користувач є членом.
+        - in: query
+          name: isCreator
+          schema:
+            type: boolean
+          description: Фільтрувати групи, створені поточним користувачем.
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            minimum: 1
+            default: 10
+          description: Кількість груп на сторінці.
+        - in: query
+          name: offset
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+          description: Зміщення від початку списку.
+      responses:
+        '200':
+          description: Успішний запит. Повертає масив груп.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Group'
+        '401':
+          description: Неавторизований доступ.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Помилка на сервері.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    post:
+      summary: Створити нову групу.
+      security:
+        - bearerAuth: []
+      tags:
+        - Групи
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateGroupRequest'
+      responses:
+        '201':
+          description: Групу успішно створено.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Group'
+          headers:
+            Location:
+              schema:
+                type: string
+              description: URL новоствореного ресурсу.
+        '400':
+          description: Некоректний запит.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Неавторизований доступ.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Помилка на сервері.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /groups/{group_id}:
+    get:
+      summary: Отримати інформацію про конкретну групу.
+      security:
+        - bearerAuth: []
+      tags:
+        - Групи
+      parameters:
+        - in: path
+          name: group_id
+          required: true
+          schema:
+            type: integer
+            format: int64
+          description: Ідентифікатор групи.
+      responses:
+        '200':
+          description: Успішний запит. Повертає інформацію про групу.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Group'
+        '401':
+          description: Неавторизований доступ.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Заборонено. Користувач не є членом або творцем групи.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Групу не знайдено.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Помилка на сервері.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    put:
+      summary: Оновити інформацію про групу.
+      security:
+        - bearerAuth: []
+      tags:
+        - Групи
+      parameters:
+        - in: path
+          name: group_id
+          required: true
+          schema:
+            type: integer
+            format: int64
+          description: Ідентифікатор групи.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateGroupRequest'
+      responses:
+        '200':
+          description: Групу успішно оновлено. Повертає оновлену інформацію.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Group'
+        '400':
+          description: Некоректний запит.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Неавторизований доступ.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Заборонено. Користувач не є творцем групи.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Групу не знайдено.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Помилка на сервері.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      summary: Видалити групу.
+      security:
+        - bearerAuth: []
+      tags:
+        - Групи
+      parameters:
+        - in: path
+          name: group_id
+          required: true
+          schema:
+            type: integer
+            format: int64
+          description: Ідентифікатор групи.
+      responses:
+        '204':
+          description: Групу успішно видалено.
+        '401':
+          description: Неавторизований доступ.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Заборонено. Користувач не є творцем групи.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Групу не знайдено.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Помилка на сервері.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /groups/{group_id}/members:
+    get:
+      summary: Отримати список членів групи.
+      security:
+        - bearerAuth: []
+      tags:
+        - Членство у Групах
+      parameters:
+        - in: path
+          name: group_id
+          required: true
+          schema:
+            type: integer
+            format: int64
+          description: Ідентифікатор групи.
+      responses:
+        '200':
+          description: Успішний запит. Повертає масив членів групи.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UserInGroup'
+        '401':
+          description: Неавторизований доступ.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Заборонено. Користувач не є членом або творцем групи.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Групу не знайдено.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Помилка на сервері.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    post:
+      summary: Додати члена до групи.
+      security:
+        - bearerAuth: []
+      tags:
+        - Членство у Групах
+      parameters:
+        - in: path
+          name: group_id
+          required: true
+          schema:
+            type: integer
+            format: int64
+          description: Ідентифікатор групи.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddMemberRequest'
+      responses:
+        '201':
+          description: Користувача успішно додано до групи.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MembershipStatus'
+        '400':
+          description: Некоректний запит (наприклад, користувач вже є членом групи).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Неавторизований доступ.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Заборонено. Користувач не є творцем групи.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Групу або користувача не знайдено.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Помилка на сервері.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /groups/{group_id}/members/{user_id}:
+    delete:
+      summary: Видалити члена з групи.
+      security:
+        - bearerAuth: []
+      tags:
+        - Членство у Групах
+      parameters:
+        - in: path
+          name: group_id
+          required: true
+          schema:
+            type: integer
+            format: int64
+          description: Ідентифікатор групи.
+        - in: path
+          name: user_id
+          required: true
+          schema:
+            type: integer
+            format: int64
+          description: Ідентифікатор користувача, якого потрібно видалити.
+      responses:
+        '204':
+          description: Члена успішно видалено з групи.
+        '401':
+          description: Неавторизований доступ.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Заборонено. Користувач не має дозволу на видалення цього члена (не творець або не видаляє себе).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Групу або користувача не знайдено в цій групі.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Помилка на сервері.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
